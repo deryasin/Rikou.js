@@ -81,20 +81,23 @@ module.exports.commands = {
 
 module.exports.listeners = {
     onRawReactionAdd: {
-        event: Events.RawReactionAdd,
-        async execute(client, payload) {
+        event: Events.MessageReactionAdd, // Changed from Events.RawReactionAdd
+        async execute(reaction, user) {  // Changed function signature
+            if (user.bot) return;
+
             const messageIdPath = path.join(__dirname, '../files/txt/msg_id_int.txt');
             const messageId = fs.readFileSync(messageIdPath, 'utf-8');
 
-            if (payload.messageId.toString() === messageId) {
-                const guild = await client.guilds.fetch(payload.guildId);
-                const member = await guild.members.fetch(payload.userId);
+            if (reaction.message.id === messageId) {
+                const guild = reaction.message.guild;
+                const member = await guild.members.fetch(user.id);
 
                 for (const [roleName, emoteName] of roleList) {
-                    if (payload.emoji.name === emoteName) {
+                    if (reaction.emoji.name === emoteName) {
                         const role = guild.roles.cache.find(role => role.name === roleName);
                         if (role) {
                             await member.roles.add(role);
+                            console.log(`Added role ${roleName} to user ${user.tag}`);
                         }
                     }
                 }
@@ -102,22 +105,24 @@ module.exports.listeners = {
         },
     },
 
-
     onRawReactionRemove: {
-        event: Events.RawReactionRemove,
-        async execute(client, payload) {
+        event: Events.MessageReactionRemove, // Changed from Events.RawReactionRemove
+        async execute(reaction, user) {  // Changed function signature
+            if (user.bot) return;
+
             const messageIdPath = path.join(__dirname, '../files/txt/msg_id_int.txt');
             const messageId = fs.readFileSync(messageIdPath, 'utf-8');
 
-            if (payload.messageId.toString() === messageId) {
-                const guild = await client.guilds.fetch(payload.guildId);
-                const member = await guild.members.fetch(payload.userId);
+            if (reaction.message.id === messageId) {
+                const guild = reaction.message.guild;
+                const member = await guild.members.fetch(user.id);
 
                 for (const [roleName, emoteName] of roleList) {
-                    if (payload.emoji.name === emoteName) {
+                    if (reaction.emoji.name === emoteName) {
                         const role = guild.roles.cache.find(role => role.name === roleName);
                         if (role) {
                             await member.roles.remove(role);
+                            console.log(`Removed role ${roleName} from user ${user.tag}`);
                         }
                     }
                 }
@@ -141,7 +146,7 @@ module.exports.setup = async client => {
     });
 
     for (const listener of Object.values(module.exports.listeners)) {
-        client.on(listener.event, (...args) => listener.execute(client, ...args));
+        client.on(listener.event, (...args) => listener.execute(...args));
     }
 
     console.log('Roles module loaded');

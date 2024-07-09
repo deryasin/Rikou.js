@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -49,14 +49,20 @@ const main = async () => {
 
 //---------- Event Listeners ----------
 client.once('ready', async () => {
-    console.log('Client is ready!'); // Debugging statement
+    console.log('Client is ready!');
     try {
         if (Mode === 1) {
-            await client.user.setActivity('!info', { type: 'PLAYING' });
-            console.log('Set activity to !info'); // Debugging statement
+            await client.user.setActivity({
+                name: '!info',
+                type: ActivityType.Playing
+            });
+            console.log('Set activity to !info');
         } else {
-            await client.user.setActivity('world.execute(me);', { type: 'PLAYING' });
-            console.log('Set activity to world.execute(me);'); // Debugging statement
+            await client.user.setActivity({
+                name: 'world.execute(me);',
+                type: ActivityType.Playing
+            });
+            console.log('Set activity to world.execute(me);');
         }
     } catch (error) {
         console.error('Error setting activity:', error);

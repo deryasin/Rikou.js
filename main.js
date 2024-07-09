@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, REST, Routes, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,6 +22,7 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+client.slashCommands = new Collection();
 
 //---------- Core ----------
 const loadCogs = () => {
@@ -39,6 +40,30 @@ const loadCogs = () => {
                 client.commands.set(name, command);
             }
         }
+
+        if (cog.slashCommands) {
+            for (const slashCommand of cog.slashCommands) {
+                client.slashCommands.set(slashCommand.data.name, slashCommand);
+            }
+        }
+    }
+};
+
+const registerSlashCommands = async () => {
+    const rest = new REST({ version: '10' }).setToken(Token);
+    const commandsData = Array.from(client.slashCommands.values()).map(command => command.data.toJSON());
+
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(
+            Routes.applicationCommands(client.user.id),
+            { body: commandsData },
+        );
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
     }
 };
 
@@ -46,10 +71,10 @@ const main = async () => {
     loadCogs();
     await client.login(Token);
 };
-
 //---------- Event Listeners ----------
 client.once('ready', async () => {
     console.log('Client is ready!');
+    await registerSlashCommands();
     try {
         if (Mode === 1) {
             await client.user.setActivity({
@@ -68,6 +93,22 @@ client.once('ready', async () => {
         console.error('Error setting activity:', error);
     }
 });
+
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
+
+    const command = client.slashCommands.get(interaction.commandName);
+
+    if (!command) return;
+
+    try {
+        await command.execute(interaction);
+    } catch (error) {
+        console.error(error);
+        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    }
+});
+
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return;

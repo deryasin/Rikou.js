@@ -4,12 +4,38 @@ const {
     ThreadAutoArchiveDuration,
     PermissionFlagsBits
 } = require('discord.js');
+const fs = require('fs').promises;
+const path = require('path');
 
-module.exports = {
+const EVENT_THREADS_FILE = path.join(__dirname, '../files/event_threads.json');
+
+const EventHandler = {
     eventThreads: new Map(),
 
+    async loadEventThreads() {
+        try {
+            const data = await fs.readFile(EVENT_THREADS_FILE, 'utf8');
+            const parsedData = JSON.parse(data);
+            this.eventThreads = new Map(Object.entries(parsedData));
+            console.log('Loaded event threads from file');
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error('Error loading event threads:', error);
+            }
+        }
+    },
+
+    async saveEventThreads() {
+        try {
+            const data = JSON.stringify(Object.fromEntries(this.eventThreads));
+            await fs.writeFile(EVENT_THREADS_FILE, data, 'utf8');
+            console.log('Saved event threads to file');
+        } catch (error) {
+            console.error('Error saving event threads:', error);
+        }
+    },
+
     listeners: {
-        // Add a new listener for event create
         onGuildScheduledEventCreate: {
             event: Events.GuildScheduledEventCreate,
             async execute(guildScheduledEvent) {
@@ -32,25 +58,23 @@ module.exports = {
 
                     console.log(`Created private thread for event: ${guildScheduledEvent.name}`);
 
-                    // Store the thread ID with the event ID
-                    this.eventThreads.set(guildScheduledEvent.id, thread.id);
+                    EventHandler.eventThreads.set(guildScheduledEvent.id, thread.id);
+                    await EventHandler.saveEventThreads();
 
-                    // Post an initial message in the thread
                     await thread.send(`This is a private thread for discussing the event: **${guildScheduledEvent.name}**. Only interested users will be added to this thread.`);
-
                 } catch (error) {
                     console.error(`Error creating private thread for event ${guildScheduledEvent.name}:`, error);
                 }
             }
         },
-        // Add a new listener for event update
+
         onGuildScheduledEventUpdate: {
             event: Events.GuildScheduledEventUpdate,
             async execute(oldEvent, newEvent) {
                 console.log(`Event updated: ${newEvent.name} (ID: ${newEvent.id})`);
                 console.log(`Old user count: ${oldEvent.userCount}, New user count: ${newEvent.userCount}`);
 
-                const threadId = this.eventThreads.get(newEvent.id);
+                const threadId = EventHandler.eventThreads.get(newEvent.id);
                 if (!threadId) {
                     console.log(`No thread found for event: ${newEvent.name} (ID: ${newEvent.id})`);
                     return;
@@ -63,18 +87,13 @@ module.exports = {
                 }
 
                 try {
-                    // Fetch all subscribers
                     const subscribers = await newEvent.fetchSubscribers();
                     console.log(`Total subscribers for event ${newEvent.name}: ${subscribers.size}`);
 
                     for (const [userId, user] of subscribers) {
-                        // Check if the user is already in the thread
                         const threadMember = await thread.members.fetch(userId).catch(() => null);
                         if (!threadMember) {
-                            // Add the user to the thread
                             await thread.members.add(userId);
-
-                            // Send a welcome message
                             await thread.send(`Welcome <@${userId}>! You've shown interest in the event: **${newEvent.name}**.`);
                             console.log(`Added user ${user.tag} (ID: ${userId}) to private thread for event: ${newEvent.name}`);
                         }
@@ -84,11 +103,11 @@ module.exports = {
                 }
             }
         },
-        // Add a new listener for user add
+
         onGuildScheduledEventUserAdd: {
             event: Events.GuildScheduledEventUserAdd,
             async execute(guildScheduledEvent, user) {
-                const threadId = this.eventThreads.get(guildScheduledEvent.id);
+                const threadId = EventHandler.eventThreads.get(guildScheduledEvent.id);
                 if (!threadId) {
                     console.log(`No thread found for event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
                     return;
@@ -109,11 +128,11 @@ module.exports = {
                 }
             }
         },
-        // Add a new listener for user removal
+
         onGuildScheduledEventUserRemove: {
             event: Events.GuildScheduledEventUserRemove,
             async execute(guildScheduledEvent, user) {
-                const threadId = this.eventThreads.get(guildScheduledEvent.id);
+                const threadId = EventHandler.eventThreads.get(guildScheduledEvent.id);
                 if (!threadId) {
                     console.log(`No thread found for event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
                     return;
@@ -133,7 +152,7 @@ module.exports = {
                 }
             }
         },
-        // Add a new listener for thread members update
+
         onThreadMembersUpdate: {
             event: Events.ThreadMembersUpdate,
             async execute(addedMembers, removedMembers, thread) {
@@ -141,11 +160,11 @@ module.exports = {
                 console.log(`Added members: ${addedMembers.size}, Removed members: ${removedMembers.size}`);
             }
         },
-        // Add a new listener for scheduled event delete
+
         onGuildScheduledEventDelete: {
             event: Events.GuildScheduledEventDelete,
             async execute(guildScheduledEvent) {
-                const threadId = this.eventThreads.get(guildScheduledEvent.id);
+                const threadId = EventHandler.eventThreads.get(guildScheduledEvent.id);
                 if (!threadId) {
                     console.log(`No thread found for deleted event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
                     return;
@@ -158,25 +177,22 @@ module.exports = {
                 }
 
                 try {
-                    // Lock the thread
                     await thread.setLocked(true, 'Event has ended');
                     await thread.send('This event has ended. The thread is now locked.');
                     console.log(`Locked thread for ended event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
 
-                    // Remove the thread
-                    this.eventThreads.delete(guildScheduledEvent.id);
+                    EventHandler.eventThreads.delete(guildScheduledEvent.id);
+                    await EventHandler.saveEventThreads();
                 } catch (error) {
                     console.error(`Error locking thread for ended event ${guildScheduledEvent.name}:`, error);
                 }
             }
         },
 
-        // Add a new listener for scheduled event end
         onGuildScheduledEventEnd: {
             event: 'guildScheduledEventEnd',
             async execute(guildScheduledEvent) {
-
-                const threadId = this.eventThreads.get(guildScheduledEvent.id);
+                const threadId = EventHandler.eventThreads.get(guildScheduledEvent.id);
                 if (!threadId) {
                     console.log(`No thread found for ended event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
                     return;
@@ -189,13 +205,12 @@ module.exports = {
                 }
 
                 try {
-                    // Lock the thread
                     await thread.setLocked(true, 'Event has ended');
                     await thread.send('This event has ended. The thread is now locked.');
                     console.log(`Locked thread for ended event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
 
-                    // Remove the thread
-                    this.eventThreads.delete(guildScheduledEvent.id);
+                    EventHandler.eventThreads.delete(guildScheduledEvent.id);
+                    await EventHandler.saveEventThreads();
                 } catch (error) {
                     console.error(`Error locking thread for ended event ${guildScheduledEvent.name}:`, error);
                 }
@@ -203,23 +218,26 @@ module.exports = {
         },
     },
 
-    setup: async client => {
-        for (const listener of Object.values(module.exports.listeners)) {
-            client.on(listener.event, (...args) => listener.execute.apply(module.exports, args));
+    setup: async (client) => {
+        await EventHandler.loadEventThreads();
+
+        for (const listener of Object.values(EventHandler.listeners)) {
+            client.on(listener.event, (...args) => listener.execute.apply(EventHandler, args));
         }
 
-        // Set up a check for ended events
-        setInterval(() => {
+        setInterval(async () => {
             const now = new Date();
-            client.guilds.cache.forEach(guild => {
-                guild.scheduledEvents.cache.forEach(event => {
+            for (const [guildId, guild] of client.guilds.cache) {
+                for (const [eventId, event] of guild.scheduledEvents.cache) {
                     if (event.scheduledEndAt && event.scheduledEndAt <= now) {
                         client.emit('guildScheduledEventEnd', event);
                     }
-                });
-            });
-        }, 60000); // Check every minute
+                }
+            }
+        }, 60000);
 
         console.log('Events module loaded');
     }
 };
+
+module.exports = EventHandler;

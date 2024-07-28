@@ -48,6 +48,7 @@ const EventHandler = {
                 }
 
                 try {
+                    console.log(`Creating thread for event: ${guildScheduledEvent.name} (ID: ${guildScheduledEvent.id})`);
                     const thread = await eventsChannel.threads.create({
                         name: guildScheduledEvent.name,
                         autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
@@ -56,14 +57,29 @@ const EventHandler = {
                         reason: `Private thread for event: ${guildScheduledEvent.name}`
                     });
 
-                    console.log(`Created private thread for event: ${guildScheduledEvent.name}`);
+                    console.log(`Created private thread for event: ${guildScheduledEvent.name} (Thread ID: ${thread.id})`);
 
                     EventHandler.eventThreads.set(guildScheduledEvent.id, thread.id);
                     await EventHandler.saveEventThreads();
 
                     await thread.send(`This is a private thread for discussing the event: **${guildScheduledEvent.name}**. Only interested users will be added to this thread.`);
+
+                    // Add event creator to the thread
+                    console.log(`Attempting to add event creator (ID: ${guildScheduledEvent.creatorId}) to thread`);
+                    const eventCreator = await guild.members.fetch(guildScheduledEvent.creatorId);
+                    if (!eventCreator) {
+                        console.log(`Failed to fetch event creator (ID: ${guildScheduledEvent.creatorId})`);
+                        return;
+                    }
+
+                    await thread.members.add(eventCreator.id);
+                    console.log(`Added event creator ${eventCreator.user.tag} (ID: ${eventCreator.id}) to private thread`);
+
+                    await thread.send(`Welcome <@${eventCreator.id}>! You've created the event: **${guildScheduledEvent.name}**.`);
+                    console.log(`Sent welcome message to event creator in thread`);
+
                 } catch (error) {
-                    console.error(`Error creating private thread for event ${guildScheduledEvent.name}:`, error);
+                    console.error(`Error in onGuildScheduledEventCreate for event ${guildScheduledEvent.name}:`, error);
                 }
             }
         },

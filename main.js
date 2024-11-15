@@ -116,7 +116,9 @@ client.on('messageCreate', async message => {
     if (message.content.toLowerCase().includes('loli') || message.content.toLowerCase().includes('lolis')) {
         await message.channel.send('<:MatsuLewd:1061639068645068842>');
     }
-
+    if (message.content.toLowerCase().includes('fuchs') || message.content.toLowerCase().includes('fuechse') || message.content.toLowerCase().includes('f  chse')) {
+        await message.channel.send('<a:FoxSpin:1061632987944468592>');
+    }
     if (!message.content.startsWith(prefix) || message.author.bot) return;
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);

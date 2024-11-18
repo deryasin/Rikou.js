@@ -6,6 +6,7 @@ const {
 } = require('discord.js');
 const fs = require('fs').promises;
 const path = require('path');
+const eventchannelid = '1121152075355652198';
 
 const EVENT_THREADS_FILE = path.join(__dirname, '../files/event_threads.json');
 
@@ -40,7 +41,7 @@ const EventHandler = {
             event: Events.GuildScheduledEventCreate,
             async execute(guildScheduledEvent) {
                 const guild = guildScheduledEvent.guild;
-                const eventsChannel = guild.channels.cache.find(channel => channel.name === 'event-general');
+                const eventsChannel = guild.channels.cache.get(eventchannelid);
 
                 if (!eventsChannel) {
                     console.log('Events channel not found');

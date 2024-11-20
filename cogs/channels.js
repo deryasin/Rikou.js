@@ -111,7 +111,7 @@ module.exports = {
                 }
 
                 // User left a channel
-                if (oldState.channel && !newState.channel) {
+                if (oldState.channel) {
 
                     // Check if it's a duplicate channel
                     if (oldState.channel.name.includes('#')) {

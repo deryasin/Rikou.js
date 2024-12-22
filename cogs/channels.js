@@ -86,14 +86,24 @@ module.exports = {
                     const originalChannel = newState.channel;
                     const channelName = originalChannel.name;
 
-                    // Find existing duplicate channels
+                    // Find existing channels and extract their numbers
                     const duplicateChannels = originalChannel.guild.channels.cache.filter(
                         (ch) => ch.name.startsWith(`${channelName} #`) &&
                             ch.parentId === defaultCategoryId
                     );
 
-                    // Create new duplicate channel
-                    const duplicateChannelName = `${channelName} #${duplicateChannels.size + 1}`;
+                    // Find the highest number currently in use
+                    let highestNumber = 0;
+                    duplicateChannels.forEach(channel => {
+                        const match = channel.name.match(/\#(\d+)$/);
+                        if (match) {
+                            const num = parseInt(match[1]);
+                            highestNumber = Math.max(highestNumber, num);
+                        }
+                    });
+
+                    // Create new duplicate channel with next number
+                    const duplicateChannelName = `${channelName} #${highestNumber + 1}`;
 
                     const duplicatedChannel = await originalChannel.guild.channels.create({
                         name: duplicateChannelName,
@@ -112,10 +122,8 @@ module.exports = {
 
                 // User left a channel
                 if (oldState.channel) {
-
                     // Check if it's a duplicate channel
                     if (oldState.channel.name.includes('#')) {
-
                         // Double-check channel exists and get fresh member count
                         const currentChannel = await oldState.channel.guild.channels.fetch(oldState.channel.id);
                         if (!currentChannel) {

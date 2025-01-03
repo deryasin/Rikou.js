@@ -1,5 +1,8 @@
 
+
 *.DS_Store
+config.json
+cogs/twitch/files/config.json
 files/config.json
 
 logs

@@ -119,8 +119,8 @@ client.on('interactionCreate', async interaction => {
     }
 });
 client.on('messageCreate', async message => {
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
-
+    if (message.author.bot) return;
+    
     const keywords = {
         loli: '<:MatsuLewd:1061639068645068842>',
         fuchs: '<a:FoxSpin:1061632987944468592>'
@@ -131,9 +131,8 @@ client.on('messageCreate', async message => {
             return;
         }
     }
-
-
-
+    
+    if (!message.content.startsWith(prefix)) return;
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
 

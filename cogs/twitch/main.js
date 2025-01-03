@@ -1,4 +1,4 @@
-const config = require('../../files/config.json');
+const config = require('./files/config.json');
 
 // Set to track users who are currently streaming to prevent duplicate announcements
 const liveUsers = new Set();

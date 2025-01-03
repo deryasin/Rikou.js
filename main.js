@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, Partials, Collection, REST, Routes, ActivityT
 const fs = require('fs');
 const path = require('path');
 
-const config = require('./files/config.json');
+const config = require('./config.json');
 
 const Mode = config.Mode;
 const Token = Mode === 1 ? config.TokenLive : config.TokenDev;
@@ -28,36 +28,44 @@ client.slashCommands = new Collection();
 
 //---------- Core ----------
 const loadCogs = () => {
-    const cogFiles = fs.readdirSync('./cogs').filter(file => file.endsWith('.js'));
+    const cogsPath = path.resolve(__dirname, './cogs'); 
+    const cogFolders = fs.readdirSync(cogsPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+    for (const folder of cogFolders) {
+        const cogPath = path.resolve(__dirname, 'cogs', folder, 'main.js');
 
-    for (const file of cogFiles) {
-        const cog = require(`./cogs/${file}`);
-
-        if (cog.setup) {
-            cog.setup(client);
-        }
-
-        if (cog.commands) {
-            for (const [name, command] of Object.entries(cog.commands)) {
-                client.commands.set(name, command);
+        if (fs.existsSync(cogPath)) {
+            const cog = require(cogPath);
+            
+            if (cog.setup) {
+                cog.setup(client);
             }
-        }
-
-        if (cog.slashCommands) {
-            for (const slashCommand of cog.slashCommands) {
-                client.slashCommands.set(slashCommand.data.name, slashCommand);
+            
+            if (cog.commands) {
+                for (const [name, command] of Object.entries(cog.commands)) {
+                    client.commands.set(name, command);
+                }
             }
+
+            if (cog.slashCommands) {
+                for (const slashCommand of cog.slashCommands) {
+                    client.slashCommands.set(slashCommand.data.name, slashCommand);
+                }
+            }
+        } else {
+            console.warn(`No main.js found in folder: ${folder}`);
         }
     }
 };
+
 
 const registerSlashCommands = async () => {
     const rest = new REST({ version: '10' }).setToken(Token);
     const commandsData = Array.from(client.slashCommands.values()).map(command => command.data.toJSON());
 
     try {
-        console.log('Started refreshing application (/) commands.');
-
+        console.log('Commands to register:', commandsData.map(command => command.name));
         await rest.put(
             Routes.applicationCommands(client.user.id),
             { body: commandsData },
@@ -110,18 +118,21 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
     }
 });
-
-
 client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-
-    if (message.content.toLowerCase().includes('loli') || message.content.toLowerCase().includes('lolis')) {
-        await message.channel.send('<:MatsuLewd:1061639068645068842>');
-    }
-    if (message.content.toLowerCase().includes('fuchs') || message.content.toLowerCase().includes('fuechse') || message.content.toLowerCase().includes('f  chse')) {
-        await message.channel.send('<a:FoxSpin:1061632987944468592>');
-    }
     if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+    const keywords = {
+        loli: '<:MatsuLewd:1061639068645068842>',
+        fuchs: '<a:FoxSpin:1061632987944468592>'
+    }
+    for (const [keyword, response] of Object.entries(keywords)) {
+        if (message.content.toLowerCase().includes(keyword)) {
+            await message.channel.send(response);
+            return;
+        }
+    }
+
+
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
@@ -132,7 +143,6 @@ client.on('messageCreate', async message => {
         await message.channel.send('Dieser Befehl ist nicht bekannt. Überprüfe ob du ihn richtig geschrieben hast oder schaue bei !info nach.');
         return;
     }
-
     try {
         await command.execute(message);
     } catch (error) {

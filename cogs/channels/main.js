@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-const channelsFilePath = path.join(__dirname, '../files/channels.json');
+const channelsFilePath = path.join(__dirname, './files/channels.json');
 const defaultCategoryId = '1061370141931212882'; // Your category ID
 
 const ensureChannelsFile = () => {

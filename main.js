@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, Partials, Collection, REST, Routes, ActivityT
 const fs = require('fs');
 const path = require('path');
 
-const config = require('./files/config.json');
+const config = require('./config.json');
 
 const Mode = config.Mode;
 const Token = Mode === 1 ? config.TokenLive : config.TokenDev;

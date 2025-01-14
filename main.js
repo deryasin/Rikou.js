@@ -19,6 +19,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessageTyping,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.DirectMessages,
     ],
     partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User],
 });
@@ -120,18 +121,6 @@ client.on('interactionCreate', async interaction => {
 });
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
-    
-    const keywords = {
-        loli: '<:MatsuLewd:1061639068645068842>',
-        fuchs: '<a:FoxSpin:1061632987944468592>'
-    }
-    for (const [keyword, response] of Object.entries(keywords)) {
-        if (message.content.toLowerCase().includes(keyword)) {
-            await message.channel.send(response);
-            return;
-        }
-    }
-    
     if (!message.content.startsWith(prefix)) return;
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();

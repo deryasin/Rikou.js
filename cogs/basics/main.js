@@ -18,34 +18,6 @@ module.exports = {
     slashCommands: [
         {
             data: new SlashCommandBuilder()
-                .setName('pb')
-                .setDescription('Sends link to GDrive Folder with Schwarzfuchs related profile pictures'),
-            async execute(interaction) {
-                const gdriveLink = readFile(path.join(__dirname, './files/txt/gdrive_link.txt'));
-                if (gdriveLink) await interaction.reply(gdriveLink);
-            },
-        },
-        {
-            data: new SlashCommandBuilder()
-                .setName('code')
-                .setDescription('Meme about my outstanding coding skills'),
-            async execute(interaction) {
-                const file = new AttachmentBuilder(path.join(__dirname, './files/img/maevisss-meme.jpg'));
-                await interaction.reply({ files: [file] });
-            },
-        },
-        {
-            data: new SlashCommandBuilder()
-                .setName('happy')
-                .setDescription('Happy Sakamata Chloe gif'),
-            async execute(interaction) {
-                const content = `<@${interaction.user.id}> ist happy!`;
-                const file = new AttachmentBuilder(path.join(__dirname, './files/img/sakamata-chloe.gif'));
-                await interaction.reply({ content, files: [file] });
-            },
-        },
-        {
-            data: new SlashCommandBuilder()
                 .setName('info')
                 .setDescription('Post info message with programming language and operating system details'),
             async execute(interaction) {
@@ -110,13 +82,18 @@ module.exports = {
         {
             data: new SlashCommandBuilder()
                 .setName('com')
-                .setDescription('Send a list of commands via DM'),
+                .setDescription('Send a list of available commands via DM'),
             async execute(interaction) {
-                const commandsList = readFile(path.join(__dirname, './files/txt/commands.txt'));
-                if (!commandsList) return;
+                const commands = interaction.client.slashCommands;
+
+                const commandsList = Array.from(commands.values())
+                    .map(cmd => `/${cmd.data.name} - ${cmd.data.description}`)
+                    .join('\n');
+
+                const message = `Available Commands:\n\n${commandsList}`;
 
                 try {
-                    await interaction.user.send(commandsList);
+                    await interaction.user.send(message);
                     await interaction.reply('Du hast eine DM mit der Liste erhalten.');
                 } catch (error) {
                     console.error('Error sending DM:', error);

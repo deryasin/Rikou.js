@@ -89,7 +89,7 @@ client.once('ready', async () => {
     try {
         if (Mode === 1) {
             await client.user.setActivity({
-                name: '!info',
+                name: '/info',
                 type: ActivityType.Playing
             });
             console.log('Set activity to !info');

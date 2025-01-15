@@ -29,6 +29,7 @@ module.exports = {
             data: new SlashCommandBuilder()
                 .setName('channel')
                 .setDescription('Manage voice channels')
+                .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator) // Only admins can see/use the command
                 .addSubcommand(subcommand =>
                     subcommand
                         .setName('create')
@@ -41,6 +42,10 @@ module.exports = {
                         )
                 ),
             async execute(interaction) {
+                if (!interaction.memberPermissions.has(PermissionsBitField.Flags.Administrator)) {
+                    return interaction.reply({content: 'You need Administrator permissions to use this command.', ephemeral: true});
+                }
+
                 if (!interaction.guild) {
                     return interaction.reply({ content: 'This command can only be used in a server.', ephemeral: true });
                 }

@@ -251,7 +251,7 @@ module.exports = {
                     console.log('Reaction added:', {
                         messageId: messageId,
                         reactionMessageId: reaction.message.id,
-                        emoji: reaction.emoji.name,
+                        emoji: reaction.emoji.toString(),
                         user: user.tag
                     });
 
@@ -261,7 +261,7 @@ module.exports = {
                         const roles = loadRoles();
 
                         for (const role of roles) {
-                            if (reaction.emoji.name === role.emoji) {
+                            if (reaction.emoji.toString() === role.emoji) {
                                 const guildRole = guild.roles.cache.find(r => r.name === role.name);
                                 if (guildRole) {
                                     if (!member.roles.cache.has(guildRole.id)) {
@@ -291,7 +291,7 @@ module.exports = {
                     console.log('Reaction removed:', {
                         messageId: messageId,
                         reactionMessageId: reaction.message.id,
-                        emoji: reaction.emoji.name,
+                        emoji: reaction.emoji.toString(),
                         user: user.tag
                     });
 
@@ -301,7 +301,7 @@ module.exports = {
                         const roles = loadRoles();
 
                         for (const role of roles) {
-                            if (reaction.emoji.name === role.emoji) {
+                            if (reaction.emoji.toString() === role.emoji) {
                                 const guildRole = guild.roles.cache.find(r => r.name === role.name);
                                 if (guildRole) {
                                     if (member.roles.cache.has(guildRole.id)) {

@@ -78,8 +78,29 @@ const registerSlashCommands = async () => {
     }
 };
 
+const loadListeners = () => {
+    const cogsPath = path.resolve(__dirname, './cogs');
+    const cogFolders = fs.readdirSync(cogsPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+    for (const folder of cogFolders) {
+        const cogPath = path.resolve(__dirname, 'cogs', folder, 'main.js');
+        if (fs.existsSync(cogPath)) {
+            const cog = require(cogPath);
+
+            if (cog.listeners) {
+                for (const listener of Object.values(cog.listeners)) {
+                    client.on(listener.event, listener.execute);
+                }
+            }
+        }
+    }
+};
+
 const main = async () => {
     loadCogs();
+    loadListeners();
     await client.login(Token);
 };
 //---------- Event Listeners ----------
@@ -128,7 +149,7 @@ client.on('messageCreate', async message => {
     const command = client.commands.get(commandName);
 
     if (!command) {
-        await message.channel.send('Dieser Befehl ist nicht bekannt. Überprüfe ob du ihn richtig geschrieben hast oder schaue bei !info nach.');
+        await message.channel.send('Dieser Befehl ist nicht bekannt. Überprüfe ob du ihn richtig geschrieben hast oder schaue bei /com nach.');
         return;
     }
     try {
